@@ -18,10 +18,30 @@ function checksExistsUserAccount(request, response, next) {
   if (!user) {
     response.status(404).json({ error: 'user not found' });
   }
+
+  req.user = user;
+
+  return next();
+}
+
+function verifyExistsUser(username) {
+  const user = users.some(user => user.username === username);
+
+  if (user) {
+    return true;
+  }
+
+  return false;
 }
 
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
+
+  const verifyUsername = verifyExistsUser(username);
+
+  if (verifyUsername) {
+    response.status(400).json({ error: 'username aleready exists' });
+  }
 
   const user = {
     id: uuidv4(),
@@ -36,7 +56,9 @@ app.post('/users', (request, response) => {
 });
 
 app.get('/todos', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { todos } = request;
+
+  response.status(201).json( todos );
 });
 
 app.post('/todos', checksExistsUserAccount, (request, response) => {

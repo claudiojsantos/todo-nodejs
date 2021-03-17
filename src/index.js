@@ -11,15 +11,15 @@ app.use(express.json());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  const username = request.headers;
+  const { username } = request.headers;
 
-  const user = users.find(user => user.username === username)
+  const user = users.find((user) => user.username === username)
 
   if (!user) {
     response.status(404).json({ error: 'user not found' });
   }
 
-  req.user = user;
+  request.user = user;
 
   return next();
 }
@@ -27,11 +27,7 @@ function checksExistsUserAccount(request, response, next) {
 function verifyExistsUser(username) {
   const user = users.some(user => user.username === username);
 
-  if (user) {
-    return true;
-  }
-
-  return false;
+  return user ? true : false;
 }
 
 app.post('/users', (request, response) => {
@@ -56,25 +52,73 @@ app.post('/users', (request, response) => {
 });
 
 app.get('/todos', checksExistsUserAccount, (request, response) => {
-  const { todos } = request;
+  const { user } = request;
 
-  response.status(201).json( todos );
+  response.json( user.todos );
 });
 
 app.post('/todos', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { user } = request;
+  const { title, deadline } = request.body;
+
+  const todo = {
+    id: uuidv4(),
+    title: title,
+    done: false,
+    deadline: deadline,
+    created_at: new Date()
+  }
+
+  user.todos.push(todo);
+
+  response.status(201).json(todo);
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { user } = request;
+  const { id } = request.params;
+  const { title, deadline } = request.body;
+
+  const todo = user.todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    response.status(404).json({ error: 'Mensagem do erro'});
+  }
+
+  todo.title = title;
+  todo.deadline = deadline;
+  
+  response.status(201).json( { "deadline": todo.deadline, "done": todo.done, "title": todo.title } );
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { id } = request.params;
+  const { user } = request;
+
+  const todo = user.todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    response.status(404).json({ error: 'Mensagem do erro'});
+  }
+
+  todo.done = true;
+
+  response.json(todo);
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { id } = request.params;
+  const { user } = request;
+  
+  const todo = user.todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    response.status(404).json({ error: 'Mensagem do erro'});
+  }
+
+  user.todos.splice( todo, 1 );
+
+  response.status(204).send();
 });
 
 module.exports = app;
